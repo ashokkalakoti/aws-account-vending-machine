@@ -1,7 +1,7 @@
 {
     "OU": "Sandbox",
     "AccountName": "Organization 2 Account",
-    "AccountEmail": "ashokkalakoti+codetoimpact2023@gic.com.sg",
+    "AccountEmail": "cloudreinforce+sandbox1@gmail.com",
     "TemplateBody": {
           "AWSTemplateFormatVersion": "2010-09-09",
           "Description": "Template description",
@@ -42,3 +42,6 @@
           }
     }
 }
+
+
+
