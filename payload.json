@@ -1,0 +1,44 @@
+{
+    "OU": "Sandbox",
+    "AccountName": "Organization 2 Account",
+    "AccountEmail": "ashokkalakoti+codetoimpact2023@gic.com.sg",
+    "TemplateBody": {
+          "AWSTemplateFormatVersion": "2010-09-09",
+          "Description": "Template description",
+          "Resources": {
+            "AquariusPlusAutomationRole": {
+                "Type": "AWS::IAM::Role",
+                "Properties": {
+                    "RoleName": "aquarius-plus-automation-role",
+                    "Description": "IAM role for Account Automation",
+                    "Path": "/",
+                    "AssumeRolePolicyDocument": {
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {
+                                    "AWS": [
+                                        "arn:aws:iam::664000666097:root"
+                                    ]
+                                },
+                                "Action": [
+                                    "sts:AssumeRole"
+                                ]
+                            }
+                        ]
+                    },
+                    "Tags": [
+                        {
+                            "Key": "Name",
+                            "Value": "aquarius-plus-automation-role"
+                        }
+                    ],
+                    "ManagedPolicyArns": [
+                        "arn:aws:iam::aws:policy/AdministratorAccess"
+                    ]
+                }
+            }
+          }
+    }
+}

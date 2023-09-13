@@ -1,0 +1,19 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Action": [
+                "organizations:listRoots",
+                "organizations:createOrganizationalUnit",
+                "organizations:createAccount",
+                "organizations:describeCreateAccountStatus",
+                "organizations:moveAccount",
+                "organizations:listOrganizationalUnitsForParent",
+                "cloudformation:createStack",
+                "sts:AssumeRole"
+            ],
+            "Resource": "*",
+            "Effect": "Allow"
+        }
+    ]
+}
