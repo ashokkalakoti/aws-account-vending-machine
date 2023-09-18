@@ -1,7 +1,8 @@
 {
     "OU": "Sandbox",
-    "AccountName": "Organization 2 Account",
-    "AccountEmail": "cloudreinforce+sandbox1@gmail.com",
+    "AccountName": "Sandbox5 Account",
+    "AccountEmail": "cloudreinforce+sandbox5@gmail.com",
+    "StackName": "aquarius-plus-automation-role",
     "TemplateBody": {
           "AWSTemplateFormatVersion": "2010-09-09",
           "Description": "Template description",
@@ -19,7 +20,7 @@
                                 "Effect": "Allow",
                                 "Principal": {
                                     "AWS": [
-                                        "arn:aws:iam::664000666097:root"
+                                        "arn:aws:iam::597849092155:root"
                                     ]
                                 },
                                 "Action": [
@@ -42,6 +43,3 @@
           }
     }
 }
-
-
-
