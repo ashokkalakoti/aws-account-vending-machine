@@ -1,0 +1,201 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "Get Organization Root",
+    "States": {
+      "Get Organization Root": {
+        "Type": "Task",
+        "Parameters": {},
+        "Resource": "arn:aws:states:::aws-sdk:organizations:listRoots",
+        "ResultPath": "$.data.rootOU",
+        "Next": "Create New Organizational Unit"
+      },
+      "Create New Organizational Unit": {
+        "Type": "Task",
+        "Parameters": {
+          "Name.$": "$.OU",
+          "ParentId.$": "$.data.rootOU.Roots[0].Id"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:createOrganizationalUnit",
+        "ResultPath": "$.result.newOU",
+        "Catch": [
+          {
+            "ErrorEquals": [
+              "Organizations.DuplicateOrganizationalUnitException"
+            ],
+            "Next": "List Organizational Units",
+            "ResultPath": null,
+            "Comment": "OU Exists"
+          }
+        ],
+        "Next": "Create New Account"
+      },
+      "Create New Account": {
+        "Type": "Task",
+        "Parameters": {
+          "AccountName.$": "$.AccountName",
+          "Email.$": "$.AccountEmail"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:createAccount",
+        "ResultPath": "$.result.NewAccount",
+        "Next": "Wait 30 Sec"
+      },
+      "Wait 30 Sec": {
+        "Type": "Wait",
+        "Seconds": 30,
+        "Next": "New Account Status"
+      },
+      "New Account Status": {
+        "Type": "Task",
+        "Parameters": {
+          "CreateAccountRequestId.$": "$.result.NewAccount.CreateAccountStatus.Id"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:describeCreateAccountStatus",
+        "ResultPath": "$.result.NewAccount",
+        "Next": "Check Account Status"
+      },
+      "Check Account Status": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.result.NewAccount.CreateAccountStatus.State",
+            "StringEquals": "IN_PROGRESS",
+            "Next": "Wait 30 Sec"
+          },
+          {
+            "Variable": "$.result.NewAccount.CreateAccountStatus.State",
+            "StringEquals": "FAILED",
+            "Next": "Failed"
+          }
+        ],
+        "Default": "New Account Credentials"
+      },
+      "New Account Credentials": {
+        "Type": "Pass",
+        "Next": "Wait 30 Seconds",
+        "Parameters": {
+          "Credentials.$": "States.Format('arn:aws:iam::{}:role/OrganizationAccountAccessRole',$.result.NewAccount.CreateAccountStatus.AccountId)"
+        },
+        "ResultPath": "$.result.AccuntDetails"
+      },
+      "Wait 30 Seconds": {
+        "Type": "Wait",
+        "Seconds": 30,
+        "Next": "Create Stack"
+      },
+      "Create Stack": {
+        "Type": "Task",
+        "Parameters": {
+          "StackName.$": "$.StackName",
+          "Capabilities": [
+            "CAPABILITY_NAMED_IAM"
+          ],
+          "TemplateBody.$": "$.TemplateBody"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:cloudformation:createStack",
+        "ResultPath": "$.result.CreateStack",
+        "Credentials": {
+          "RoleArn.$": "$.result.AccuntDetails.Credentials"
+        },
+        "Next": "CreateCase"
+      },
+      "CreateCase": {
+        "Type": "Task",
+        "Parameters": {
+          "CommunicationBody.$": "States.Format('Please ignore - testing the automation for support ticket creation - {}.', $.result.NewAccount.CreateAccountStatus.AccountId)",
+          "Subject.$": "States.Format('please ingnore - testing automation workflow for account - {}.', $.result.NewAccount.CreateAccountStatus.AccountId)",
+          "IssueType": "customer-service",
+          "CcEmailAddresses": [
+            "ashokkalakoti@gic.com.sg"
+          ],
+          "Language": "en"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:support:createCase",
+        "Next": "Move Account To OU",
+        "ResultPath": "$.result.CreateCase"
+      },
+      "Move Account To OU": {
+        "Type": "Task",
+        "Parameters": {
+          "AccountId.$": "$.result.NewAccount.CreateAccountStatus.AccountId",
+          "DestinationParentId.$": "$.result.newOU.OrganizationalUnit.Id",
+          "SourceParentId.$": "$.data.rootOU.Roots[0].Id"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:moveAccount",
+        "ResultPath": "$.result.MoveAccount",
+        "Next": "SendNotification"
+      },
+      "SendNotification": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:ap-southeast-1:664000666097:AccountVendingMachine_Notifications",
+          "Message.$": "$"
+        },
+        "End": true
+      },
+      "List Organizational Units": {
+        "Type": "Task",
+        "Next": "Loop over all OUs",
+        "Parameters": {
+          "ParentId.$": "$.data.rootOU.Roots[0].Id"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:listOrganizationalUnitsForParent",
+        "ResultPath": "$.data.existingOUs"
+      },
+      "Loop over all OUs": {
+        "Type": "Map",
+        "ItemProcessor": {
+          "ProcessorConfig": {
+            "Mode": "INLINE"
+          },
+          "StartAt": "Is this the OU?",
+          "States": {
+            "Is this the OU?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.OrganizationalUnit.Name",
+                  "StringEqualsPath": "$.OU",
+                  "Next": "Get OU ID"
+                }
+              ],
+              "Default": "Ignore"
+            },
+            "Get OU ID": {
+              "Type": "Pass",
+              "Result": 1,
+              "ResultPath": "$.OU",
+              "End": true
+            },
+            "Ignore": {
+              "Type": "Pass",
+              "Result": 0,
+              "ResultPath": "$.OU",
+              "End": true
+            }
+          }
+        },
+        "Next": "Get The OU Details",
+        "ResultPath": "$.targetOU",
+        "ItemSelector": {
+          "OrganizationalUnit.$": "$$.Map.Item.Value",
+          "OU.$": "$.OU"
+        },
+        "ItemsPath": "$.data.existingOUs.OrganizationalUnits",
+        "ResultSelector": {
+          "newOU.$": "$.[?(@.OU > 0)]"
+        }
+      },
+      "Get The OU Details": {
+        "Type": "Pass",
+        "Next": "Create New Account",
+        "ResultPath": "$.result",
+        "Parameters": {
+          "newOU.$": "$.targetOU.newOU[0]"
+        }
+      },
+      "Failed": {
+        "Type": "Fail"
+      }
+    }
+  }
