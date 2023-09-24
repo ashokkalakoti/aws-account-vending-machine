@@ -1,7 +1,10 @@
 # aws-account-vending-machine
 **AWS Account Vending Machine using Step function:**
  This solution helps to automate end-to-end account creation in Organizations as well as how to automate resources provisioning on the newly vended account. Also, submit the AWS Support case to include the newly Created Account to the Enterprise/Primium Support Plan. End of the workflow, the newly vended Account will be move into an organizational unit (OU) to apply the SCP controls.
-
+## workflow:
+**Process overview**
+The following process flow diagram illustrates the steps required to create an account, configure the account, and then move it into an OU so that the account can take advantage of the centralized SCP functionality in Organizations. The tasks in the blue nodes occur in the master account in the organization in question, and the task in the orange node occurs in the new member account I create
+![Workflow for Account Creation](Workflow.png)
 ## Required Resources:
 1. **02 Step Function (refer 100-, 200- folders)**
 2. **IAM Role for Step Function to do the Account Creation and Moving into the respective given OU.**
@@ -30,8 +33,3 @@
     "AccountEmail": "ashokkalakoti+codetoimpact12023@cloudreinforce.com"
 }
 ```
-
-## workflow:
-**Process overview**
-The following process flow diagram illustrates the steps required to create an account, configure the account, and then move it into an OU so that the account can take advantage of the centralized SCP functionality in Organizations. The tasks in the blue nodes occur in the master account in the organization in question, and the task in the orange node occurs in the new member account I create
-![Workflow for Account Creation](Workflow.png)
