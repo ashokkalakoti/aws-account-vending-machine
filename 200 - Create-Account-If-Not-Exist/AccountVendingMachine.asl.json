@@ -105,7 +105,7 @@
           "Subject.$": "States.Format('please ingnore - testing automation workflow for account - {}.', $.result.NewAccount.CreateAccountStatus.AccountId)",
           "IssueType": "customer-service",
           "CcEmailAddresses": [
-            "ashokkalakoti@gic.com.sg"
+            "ashokkalakoti@cloudreinforce.com"
           ],
           "Language": "en"
         },
