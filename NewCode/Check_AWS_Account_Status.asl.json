@@ -1,0 +1,118 @@
+{
+    "Comment": "A description of my state machine",
+    "StartAt": "ListAccounts",
+    "States": {
+      "ListAccounts": {
+        "Type": "Task",
+        "Parameters": {},
+        "Resource": "arn:aws:states:::aws-sdk:organizations:listAccounts",
+        "Next": "Check if Account exists",
+        "ResultPath": "$.data.Accounts",
+        "OutputPath": "$.data.Accounts.Accounts[?(@.Email == $.AccountEmail)]"
+      },
+      "Check if Account exists": {
+        "Type": "Pass",
+        "Next": "Act based on Results",
+        "Parameters": {
+          "data.$": "$",
+          "size.$": "States.ArrayLength($)"
+        }
+      },
+      "Act based on Results": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.size",
+            "NumericEquals": 0,
+            "Next": "Continue to Create New Account"
+          }
+        ],
+        "Default": "DescribeAccount"
+      },
+      "DescribeAccount": {
+        "Type": "Task",
+        "Next": "Check Account Status",
+        "Parameters": {
+          "AccountId.$": "$.data[0].Id"
+        },
+        "Resource": "arn:aws:states:::aws-sdk:organizations:describeAccount"
+      },
+      "Check Account Status": {
+        "Type": "Choice",
+        "Choices": [
+          {
+            "Variable": "$.Account.Status",
+            "StringEquals": "ACTIVE",
+            "Next": "Send Notification"
+          }
+        ],
+        "Default": "Continue to Create New Account"
+      },
+      "Continue to Create New Account": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::states:startExecution.sync:2",
+        "Parameters": {
+          "StateMachineArn": "arn:aws:states:ap-southeast-1:664000666097:stateMachine:AccountVendingStateMachine",
+          "Input": {
+            "OU.$": "$$.Execution.Input.OU",
+            "AccountName.$": "$$.Execution.Input.AccountName",
+            "AccountEmail.$": "$$.Execution.Input.AccountEmail",
+            "StackName": "aquarius-plus-automation-role",
+            "TemplateBody": {
+              "AWSTemplateFormatVersion": "2010-09-09",
+              "Description": "Template description",
+              "Resources": {
+                "AquariusPlusAutomationRole": {
+                  "Type": "AWS::IAM::Role",
+                  "Properties": {
+                    "RoleName": "aquarius-plus-automation-role",
+                    "Description": "IAM role for Account Automation",
+                    "Path": "/",
+                    "AssumeRolePolicyDocument": {
+                      "Version": "2012-10-17",
+                      "Statement": [
+                        {
+                          "Effect": "Allow",
+                          "Principal": {
+                            "AWS": [
+                              "arn:aws:iam::664000666097:root"
+                            ]
+                          },
+                          "Action": [
+                            "sts:AssumeRole"
+                          ]
+                        }
+                      ]
+                    },
+                    "Tags": [
+                      {
+                        "Key": "Name",
+                        "Value": "aquarius-plus-automation-role"
+                      }
+                    ],
+                    "ManagedPolicyArns": [
+                      "arn:aws:iam::aws:policy/AdministratorAccess"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "End": true
+      },
+      "Send Notification": {
+        "Type": "Pass",
+        "Next": "Send Account Status"
+      },
+      "Send Account Status": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "arn:aws:sns:ap-southeast-1:664000666097:AccountVendingMachine_Notifications",
+          "Message.$": "$"
+        },
+        "End": true
+      }
+    }
+  }
